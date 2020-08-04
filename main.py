@@ -8,7 +8,7 @@ import os, argparse, time, random
 from model import BiLSTM_CRF
 import sys, pickle, os, random
 from utils import str2bool, get_logger
-from data import read_corpus, voc_build, tag2label, read_dictionary, random_embedding, load_bin_vec, get_W, one_hot
+from data import read_corpus, voc_build, tag2id, read_dictionary, random_embedding, load_bin_vec, get_W, one_hot
 from sklearn.feature_extraction.text import CountVectorizer
 from metric import  get_ner_demo
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'  #默认GPU1
@@ -45,6 +45,7 @@ parser.add_argument('--demo_model', type=str, default='1575901637', help='model 
 parser.add_argument('--cnn_filter', type=int, default=256, help='the number for cnn filter')
 parser.add_argument('--cnn_filter_size', type=int, default=5, help='the size of cnn filter')
 parser.add_argument('--model_path', type=str, default='model_1', help='the path for model save')
+parser.add_argument('--tags', type=str, default='O/PER-B/PER-I/PER-E/LOC-S/LOC-B/LOC-I/LOC-E/OFI-E/OFI-B/OFI-I/PER-S/OFI-S', help='the tags for text')
 
 args = parser.parse_args()
 
@@ -191,7 +192,7 @@ if __name__ == '__main__':
     word2id = read_dictionary(os.path.join('.', 'data_path/' 'word2id.pkl'))  #读入词表
     print("词表长度: {}".format(len(word2id)))
     embeddings = get_embedding(word2id)
-    tag2id, _ = tag2label()
+    tag2id, _ = tag2id(args.tags)
  
     if args.mode == 'train':
         train_model(embeddings, word2id, tag2id, paths)

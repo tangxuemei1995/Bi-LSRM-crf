@@ -9,7 +9,7 @@ import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell
 from tensorflow.contrib.crf import crf_log_likelihood
 from tensorflow.contrib.crf import viterbi_decode
-from data import pad_sequences, batch_yield, tag2label
+from data import pad_sequences, batch_yield, tag2id
 from utils import get_logger
 from eval import conlleval
 from build_fliter import test_filter_list
@@ -39,6 +39,7 @@ class BiLSTM_CRF(object):
         self.config = config
         self.filter_num = args.cnn_filter
         self.filter_size = args.cnn_filter_size
+        self.tags = args.tags
 
     def build_graph(self):
         self.add_placeholders()
@@ -207,7 +208,7 @@ class BiLSTM_CRF(object):
                 for lab, l in zip(label_list, seq_len_list):
                     labels = lab[:l]
                     for l in labels:
-                        _, id2tag = tag2label()
+                        _, id2tag = tag2id(self.tags)
                         f.write("{}\n".format(id2tag[l]))
                     f.write('\n')
 

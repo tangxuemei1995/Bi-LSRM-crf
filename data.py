@@ -8,8 +8,14 @@ import pandas
 from langconv import *
 
 # tags, BME/S/O
-def tag2label():
-    tag2id = {"O": 0, "PER-B": 1,
+def tag2id(tags):
+    '''
+    用于将tag 和 ID 组成字典
+    
+    '''
+    tag2id,id2tag = {}, {}
+    if tags == None:
+        tag2id = {"O": 0, "PER-B": 1,
              "PER-I": 2, "PER-E": 3,
              "LOC-S": 4, "LOC-B": 5,
              "LOC-I": 6, "LOC-E": 7,
@@ -17,7 +23,11 @@ def tag2label():
              "OFI-E":10, "PER-S":11,
              "OFI-S":11
              }
-    id2tag={}
+    else:
+        tags = tags.split('/')
+        for i in range(len(tags)):
+            tag2id[tags[i]] = i
+            
     for k,v in tag2id.items():
         id2tag[v] = k
     return tag2id,id2tag
