@@ -4,14 +4,11 @@
 # @Last Modified by:   Jie Yang,     Contact: jieynlp@gmail.com
 # @Last Modified time: 2019-02-17 22:46:59
 
-# from operator import add
-#
+
 from __future__ import print_function
 import sys
 
 
-
-## input as sentence level labels
 def get_ner_fmeasure(golden_lists, predict_lists, label_type="BMES"):
     sent_num = len(golden_lists)
     golden_full = []
@@ -60,7 +57,7 @@ def get_ner_fmeasure(golden_lists, predict_lists, label_type="BMES"):
         print("gold_num = ", golden_num, " pred_num = ", predict_num, " right_num = ", right_num)
     else:
         print("Right token = ", right_tag, " All token = ", all_tag, " acc = ", accuracy)
-    return precision, recall, f_measure
+    return precision, recall, f_measure, accuracy
 
 
 def reverse_style(input_string):
@@ -74,15 +71,18 @@ def get_ner_demo(label_list):
     # list_len = len(word_list)
     # assert(list_len == len(label_list)), "word list size unmatch with label list"
     list_len = len(label_list)
-    begin_label = 'B-'
-    end_label = 'E-'
-    single_label = 'S-'
+    begin_label = '-B'
+    end_label = '-E'
+    single_label = '-S'
     tag_index = []
     tag_type = ''
     tag_list = []
     for i in range(0, list_len):
         # wordlabel = word_list[i]
-        current_label = label_list[i].upper()
+        if label_list[i] != 0:
+            current_label = label_list[i].upper()
+        else:
+            continue
         if begin_label in current_label:
             #实体开头
             if tag_type != '':
@@ -100,7 +100,7 @@ def get_ner_demo(label_list):
             if tag_type != '':
                 tag_index.append((i-1))
                 tag_index.append(tag_type)
-                tag_list.appedn(tag_index)
+                tag_list.append(tag_index)
                 tag_index=[]
                 tag_type = ""
             tag_index.append(i)

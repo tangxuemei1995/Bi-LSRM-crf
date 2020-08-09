@@ -12,12 +12,11 @@ from tensorflow.contrib.crf import viterbi_decode
 from data import pad_sequences, batch_yield, tag2id
 from utils import get_logger
 from eval import conlleval
-from build_fliter import test_filter_list
 
 
 class BiLSTM_CRF(object):
 
-    def __init__(self, args, embeddings,  tag2label, word2id, paths, config):
+    def __init__(self, args, embeddings, tag2label, word2id, paths, config):
         self.batch_size = args.batch_size
         self.epoch_num = args.epoch
         self.hidden_dim = args.hidden_dim
@@ -75,10 +74,9 @@ class BiLSTM_CRF(object):
 
         self.word_embeddings = tf.nn.dropout(word_embeddings, self.dropout_pl)
 
-
     def cnn_layer_op(self):
         hidden_size = self.word_embeddings.shape[-1].value
-        
+
         conv_weights = tf.get_variable(
             "conv_weights", [self.filter_size, hidden_size, self.filter_num],
             initializer=tf.truncated_normal_initializer(stddev=0.02))
@@ -88,10 +86,9 @@ class BiLSTM_CRF(object):
                             conv_weights,
                             stride=1,
                             padding='SAME',
-                            name='conv') #bug [40,12]vs[40,14]
+                            name='conv')  # bug [40,12]vs[40,14]
         self.cnn_output_layer = tf.nn.relu(tf.nn.bias_add(conv, conv_bias), name='relu')
-        
-        
+
     def biLSTM_layer_op(self):
         with tf.variable_scope("bi-lstm"):
             cell_fw = LSTMCell(self.hidden_dim)
@@ -117,7 +114,7 @@ class BiLSTM_CRF(object):
                                 dtype=tf.float32)
 
             s = tf.shape(output)
-            output = tf.reshape(output, [-1, 2*self.hidden_dim])
+            output = tf.reshape(output, [-1, 2 * self.hidden_dim])
             pred = tf.matmul(output, W) + b
             self.logits = tf.reshape(pred, [-1, s[1], self.num_tags])
             # self.logits = tf.Print(self.logits, [tf.shape(self.logits)],summarize=429)
@@ -200,17 +197,10 @@ class BiLSTM_CRF(object):
     def test(self, test, args):
         saver = tf.train.Saver()
         with tf.Session(config=self.config) as sess:
-            self.logger.info('===========测试集结果===========')
+            self.logger.info('-----------------测试集结果------------------')
             saver.restore(sess, self.model_path)
             label_list, seq_len_list = self.dev_one_epoch(sess, test, args)
-            self.evaluate(label_list, seq_len_list, test)
-            with open(self.result_path + "predict.txt", 'w', encoding='utf8') as f:
-                for lab, l in zip(label_list, seq_len_list):
-                    labels = lab[:l]
-                    for l in labels:
-                        _, id2tag = tag2id(self.tags)
-                        f.write("{}\n".format(id2tag[l]))
-                    f.write('\n')
+            self.evaluate(label_list, seq_len_list, test, 1)
 
     def demo_one(self, sess, sent):
         """
@@ -226,7 +216,6 @@ class BiLSTM_CRF(object):
         for tag, label in self.tag2label.items():
             label2tag[label] = tag if label != 0 else label
         tag = [label2tag[label] for label in label_list[0]]
-        
         return tag
 
     def run_epoches(self, sess, train, dev, tag2label, saver, args):
@@ -239,26 +228,25 @@ class BiLSTM_CRF(object):
         :param saver:
         :return:
         """
-        best_f1 = 0  #用于记录训练过程中最好的f1值
+        best_f1 = 0  # 用于记录训练过程中最好的f1值
         for epoch in range(self.epoch_num):
             num_batches = (len(train) + self.batch_size - 1) // self.batch_size
 
             start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            
+
             batches = batch_yield(train, self.batch_size, self.vocab,
-                                   self.tag2label, shuffle=self.shuffle)
-                                   
+                                  self.tag2label, shuffle=self.shuffle)
+
             for step, (seqs, labels) in enumerate(batches):
                 sys.stdout.write(
                     ' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
-                    
+
                 step_num = epoch * num_batches + step + 1
                 feed_dict, _ = self.get_feed_dict(
                     seqs, labels, self.lr, self.dropout_keep_prob)
                 _, loss_train, summary, step_num_ = sess.run([self.train_op, self.loss, self.merged, self.global_step],
                                                              feed_dict=feed_dict)
                 if step + 1 == 1 or (step + 1) % 300 == 0 or step + 1 == num_batches:
-                    
                     self.logger.info(
                         '{} epoch {}, step {}, loss: {:.4}, global_step: {}'.format(start_time, epoch + 1, step + 1,
                                                                                     loss_train, step_num))
@@ -270,7 +258,7 @@ class BiLSTM_CRF(object):
 
             self.logger.info('-----------验证集测试结果------------')
             label_list_dev, seq_len_list_dev = self.dev_one_epoch(sess, dev, args)
-            f1 = self.evaluate(label_list_dev, seq_len_list_dev, dev, epoch)
+            _, _, f1 = self.evaluate(label_list_dev, seq_len_list_dev, dev, epoch)
 
             if f1 > best_f1:
                 best_f1 = f1
@@ -278,7 +266,7 @@ class BiLSTM_CRF(object):
             print("BET_F1: {}".format(best_f1))
 
     def get_feed_dict(self, seqs, labels=None, lr=None, dropout=None):
-         # labels=None, lr=None, dropout=None):
+        # labels=None, lr=None, dropout=None):
         """
         :param seqs:
         :param labels:
@@ -290,8 +278,8 @@ class BiLSTM_CRF(object):
         word_ids, seq_len_list = pad_sequences(seqs, pad_mark=0)
         feed_dict = {self.word_ids: word_ids,
                      self.sequence_lengths: seq_len_list,
-                 }
- 
+                     }
+
         if labels is not None:
             labels_, _ = pad_sequences(labels, pad_mark=0)
             feed_dict[self.labels] = labels_
@@ -311,15 +299,13 @@ class BiLSTM_CRF(object):
         label_list, seq_len_list = [], []
         count_batch = 0
         for seqs, labels in batch_yield(dev, self.batch_size, self.vocab, self.tag2label, shuffle=False):
-
             label_list_, seq_len_list_ = self.predict_one_batch(
-                    sess, seqs)
+                sess, seqs)
             label_list.extend(label_list_)
             seq_len_list.extend(seq_len_list_)
             count_batch += 1
-            
+
         return label_list, seq_len_list
-        
 
     def viterbi_decode_change(self, score, transition_params, fliter):
         """Decode the highest scoring sequence of tags outside of TensorFlow.
@@ -355,9 +341,6 @@ class BiLSTM_CRF(object):
         viterbi_score = np.max(trellis[-1])
         return viterbi, viterbi_score
 
-
-
-
     def predict_one_batch(self, sess, seqs):
         """
         :param sess:
@@ -368,7 +351,7 @@ class BiLSTM_CRF(object):
         feed_dict, seq_len_list = self.get_feed_dict(
             seqs, dropout=0.9)
         # feed_dict, seq_len_list = self.get_feed_dict(
-            # seqs,  dropout=1.0)
+        # seqs,  dropout=1.0)
 
         if self.CRF:
             logits, transition_params = sess.run([self.logits, self.transition_params],
@@ -378,7 +361,7 @@ class BiLSTM_CRF(object):
                 viterbi_seq, _ = viterbi_decode(
                     logit[:seq_len], transition_params)
                 label_list.append(viterbi_seq)
-                
+
             return label_list, seq_len_list
         else:
             label_list = sess.run(self.labels_softmax_, feed_dict=feed_dict)
@@ -397,19 +380,21 @@ class BiLSTM_CRF(object):
             label2tag[label] = tag if label != 0 else label
 
         model_predict = []
-        # for label_, (sent, _, _, tag) in zip(label_list, data):
-        for label_, (sent,tag) in zip(label_list, data):
+        for label_, (sent, tag) in zip(label_list, data):
             tag_ = [label2tag[label__] for label__ in label_]
             sent_res = []
-            # if  len(label_) != len(sent):
-            #     print(sent)
-            # print(len(label_))
-            # print(tag)
             for i in range(len(sent)):
                 sent_res.append([sent[i], tag[i], tag_[i]])
             model_predict.append(sent_res)
-        epoch_num = str(epoch+1) if epoch != None else 'test'
+        if epoch == 1:
+            epoch_num = 'test'
+        elif epoch == None:
+            epoch_num = 'dev'
+        else:
+            epoch_num = str(epoch + 1)
+
         label_path = os.path.join(self.result_path, 'label_' + epoch_num)
+
         metric_path = os.path.join(
             self.result_path, 'result_metric_' + epoch_num)
         pre, recall, f1 = conlleval(
@@ -417,6 +402,4 @@ class BiLSTM_CRF(object):
         print("pre {}".format(pre))
         print("recall {}".format(recall))
         print("f1 {}".format(f1))
-        # for _ in conlleval(model_predict, label_path, metric_path):
-        #     self.logger.info(_)
-        return f1
+        return pre, recall, f1

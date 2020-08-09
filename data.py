@@ -5,7 +5,7 @@ import gensim, logging
 import datetime
 import gensim.models.keyedvectors as word2vec
 import pandas
-from langconv import *
+# from langconv import *
 
 # tags, BME/S/O
 def tag2id(tags):
@@ -25,6 +25,7 @@ def tag2id(tags):
              }
     else:
         tags = tags.split('/')
+
         for i in range(len(tags)):
             tag2id[tags[i]] = i
             
@@ -34,15 +35,15 @@ def tag2id(tags):
     
     
     
-
-def fan_jian(char):
-    '''
-    繁简转化
-    '''
-    
-    jian_char = Converter('zh-hans').convert(char)
-    
-    return jian_char
+#
+# def fan_jian(char):
+#     '''
+#     繁简转化
+#     '''
+#
+#     jian_char = Converter('zh-hans').convert(char)
+#
+#     return jian_char
 
 
 def write_vector(path, content):
@@ -201,7 +202,6 @@ def voc_build(_path):
                 # char, pos_tag, dict_tag, label = line.strip().split('\t')
             char, label = line.strip().split('\t') 
                 #承希师兄的文件汇总字符和tag之间是空格,我处理成'\t'
-            
             if char not in d_char.keys():
                 d_char[char] = char
                 
@@ -217,7 +217,7 @@ def voc_build(_path):
     word2id = add_pad_unk(char_list)
     pos2id = add_pad_unk(pos_list)
     d2id = add_pad_unk(dict_list)
-    return word2id, pos2id, d2id
+    return word2id
 
 
 def random_embedding(vocab, embedding_dim):
@@ -272,6 +272,7 @@ def batch_yield(data, batch_size, vocab,tag2label, shuffle=False):
     
     for (sent_, tag_) in data:
         sent_, sen = sentence2id(sent_, vocab)
+
         label_ = [tag2label[tag] for tag in tag_]
         if len(seqs) == batch_size:
             yield seqs, labels

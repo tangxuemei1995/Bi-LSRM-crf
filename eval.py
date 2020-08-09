@@ -38,8 +38,7 @@ def conlleval(label_predict, label_path, metric_path):
         gold_all.append(gold_one)
         pred_all.append(pred_one)
 
-    precision, recall, f_measure = get_ner_fmeasure(gold_all, pred_all, "BIOES")
-
+    precision, recall, f_measure, acc = get_ner_fmeasure(gold_all, pred_all, "BIOES")
 
     with open(label_path, "w") as fw:
         line = []
@@ -50,8 +49,11 @@ def conlleval(label_predict, label_path, metric_path):
             line.append("\n")
         fw.writelines(line)
     # eval(label_path, metric_path)
-    # with open(metric_path) as fr:
-    #     metrics = [line.strip() for line in fr]
+    with open(metric_path,'w') as fr:
+        fr.write('token_acc:' + '\t' + str(precision))
+        fr.write('\npre:' + '\t' + str(precision))
+        fr.write('\nrecall:' + '\t' + str(recall))
+        fr.write('\nf1:' + '\t' + str(f_measure))
     return precision, recall, f_measure
 
 
